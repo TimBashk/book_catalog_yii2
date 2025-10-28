@@ -8,22 +8,33 @@ $this->title = $model->title;
 
 <h1><?= Html::encode($model->title) ?></h1>
 
-<p><strong>Год:</strong> <?= Html::encode($model->year) ?></p>
-<p><strong>ISBN:</strong> <?= Html::encode($model->isbn) ?></p>
-<p><strong>Описание:</strong> <?= nl2br(Html::encode($model->description)) ?></p>
+<div style="display:flex; gap:20px; align-items:flex-start;">
+    <div>
+        <?php
+        $cover = $model->cover_path
+                ? Yii::getAlias('@web') . '/uploads/' . $model->cover_path
+                : Yii::getAlias('@web') . '/uploads/no-cover.png';
+        ?>
+        <img src="<?= $cover ?>" alt="Обложка" style="max-width:200px; border:1px solid #ccc; border-radius:8px;">
+    </div>
 
-<?php if ($model->cover_path): ?>
-    <p><img src="<?= Yii::getAlias('@web/uploads/' . $model->cover_path) ?>" style="max-width:200px;"></p>
-<?php endif; ?>
+    <div>
+        <p><strong>Год:</strong> <?= Html::encode($model->year) ?></p>
+        <p><strong>ISBN:</strong> <?= Html::encode($model->isbn) ?></p>
+        <p><strong>Описание:</strong> <?= nl2br(Html::encode($model->description)) ?></p>
+    </div>
+</div>
+
+<hr>
 
 <p>
-    <?= Html::a('Назад', ['index'], ['class' => 'btn btn-secondary']) ?>
+    <?= Html::a('← Назад', Yii::$app->request->referrer ?: ['/book/index'], ['class' => 'btn btn-secondary']) ?>
     <?php if (!Yii::$app->user->isGuest): ?>
         <?= Html::a('Редактировать', ['update', 'id' => $model->id], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
-            'data-confirm' => 'Удалить книгу?',
-            'data-method' => 'post',
+                'class' => 'btn btn-danger',
+                'data-confirm' => 'Удалить книгу?',
+                'data-method' => 'post',
         ]) ?>
     <?php endif; ?>
 </p>

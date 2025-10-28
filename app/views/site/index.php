@@ -48,6 +48,7 @@ $this->title = 'Список книг';
                 // Кнопки действий (просмотр, редактирование, удаление)
                 !Yii::$app->user->isGuest ? [
                         'class' => 'yii\grid\ActionColumn',
+                        'controller' => 'book',
                         'header' => 'Действия',
                         'template' => '{view} {update} {delete}',
                         'buttons' => [
@@ -76,10 +77,6 @@ $this->title = 'Список книг';
                         'class' => 'yii\grid\ActionColumn',
                         'controller' => 'book',
                         'header' => 'Действия',
-                        'visibleButtons' => [
-                                'update' => !Yii::$app->user->isGuest,
-                                'delete' => !Yii::$app->user->isGuest,
-                        ],
                         'template' => '{view}', // только просмотр
                 ],
         ]),
