@@ -29,8 +29,7 @@ class Subscription extends ActiveRecord
             [['author_id', 'created_at'], 'required'],
             [['author_id', 'user_id', 'created_at'], 'integer'],
             [['contact'], 'string', 'max' => 255],
-            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => Author::class, 'targetAttribute' => ['author_id' => 'id']],
-            [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
+            [['author_id'], 'exist', 'skipOnError' => true, 'targetClass' => Author::class, 'targetAttribute' => ['author_id' => 'id']]
         ];
     }
 
@@ -40,6 +39,7 @@ class Subscription extends ActiveRecord
             'timestamp' => [
                 'class' => 'yii\behaviors\TimestampBehavior',
                 'createdAtAttribute' => 'created_at',
+                'updatedAtAttribute' => false,
                 'value' => time(),
             ],
         ];

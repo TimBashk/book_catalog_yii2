@@ -10,7 +10,7 @@ use yii\console\Controller;
 
 class SeedController extends Controller
 {
-    public function actionUser(): void
+    public function actionAddUser(): void
     {
         $user = new User();
         $user->username = 'testuser';
