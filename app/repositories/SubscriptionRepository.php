@@ -12,9 +12,11 @@ class SubscriptionRepository
         $query = Subscription::find()->select('author_id');
         if ($userId) {
             $query->where(['user_id' => $userId]);
-        } elseif ($contact) {
-            $query->where(['contact' => $contact]);
+            return $query->column();
         }
+
+        $query->where(['contact' => $contact]);
+
         return $query->column();
     }
 
