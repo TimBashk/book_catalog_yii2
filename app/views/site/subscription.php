@@ -21,15 +21,17 @@ $this->params['breadcrumbs'][] = $this->title;
         'method' => 'post',
 ]); ?>
 
-<div class="mb-3" style="max-width: 300px;">
-    <label for="contact" class="form-label">Контакт (телефон):</label>
-    <input type="text" id="contact" name="contact" class="form-control"
-           placeholder="+7XXXXXXXXXX или 8XXXXXXXXXX"
-           pattern="^(\+7|8)\d{10}$"
-           value="<?= Html::encode($contact ?? '') ?>"
-           required
-           title="Введите номер телефона в формате +7XXXXXXXXXX или 8XXXXXXXXXX">
-</div>
+<?php if (Yii::$app->user->isGuest): ?>
+    <div class="mb-3" style="max-width: 300px;">
+        <label for="contact" class="form-label">Контакт (телефон):</label>
+        <input type="text" id="contact" name="contact" class="form-control"
+               placeholder="+7XXXXXXXXXX или 8XXXXXXXXXX"
+               pattern="^(\+7|8)\d{10}$"
+               value="<?= Html::encode($contact ?? '') ?>"
+               required
+               title="Введите номер телефона в формате +7XXXXXXXXXX или 8XXXXXXXXXX">
+    </div>
+<?php endif; ?>
 
 <?= GridView::widget([
         'dataProvider' => $dataProvider,
