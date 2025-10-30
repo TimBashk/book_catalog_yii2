@@ -117,7 +117,6 @@ class SiteController extends Controller
     }
 
 
-
     public function actionReports()
     {
         $this->view->title = 'Отчет — ТОП 10 авторов';
