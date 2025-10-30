@@ -6,6 +6,7 @@ use yii\widgets\ActiveForm;
 
 /** @var yii\data\ActiveDataProvider $dataProvider */
 /** @var array $subscribedIds */
+/** @var string|null $contact */
 
 $this->title = 'Подписки';
 $this->params['breadcrumbs'][] = $this->title;

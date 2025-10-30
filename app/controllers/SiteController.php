@@ -96,10 +96,10 @@ class SiteController extends Controller
         $userId = Yii::$app->user->id ?? 0;
 
         try {
-            if (!$contact) {
+            if (!$userId && !$contact) {
                 throw new \DomainException('Укажите контакты для рассылки.');
             }
-            if (!$this->subRepo->validateContact($contact)) {
+            if (!$userId && !$this->subRepo->validateContact($contact)) {
                 throw new \DomainException('Некорректный формат телефона.');
             }
             if (empty($selectedAuthors)) {
