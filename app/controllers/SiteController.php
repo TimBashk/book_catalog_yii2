@@ -2,17 +2,36 @@
 
 namespace app\controllers;
 
-use app\models\Author;
-use app\models\Book;
-use app\models\Subscription;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\filters\AccessControl;
 use app\models\LoginForm;
+use app\repositories\{
+    BookRepository,
+    AuthorRepository,
+    SubscriptionRepository
+};
 
 class SiteController extends Controller
 {
+    private BookRepository $bookRepo;
+    private AuthorRepository $authorRepo;
+    private SubscriptionRepository $subRepo;
+
+    public function __construct(
+        $id,
+        $module,
+        BookRepository $bookRepo,
+        AuthorRepository $authorRepo,
+        SubscriptionRepository $subRepo,
+        $config = []
+    ) {
+        $this->bookRepo = $bookRepo;
+        $this->authorRepo = $authorRepo;
+        $this->subRepo = $subRepo;
+        parent::__construct($id, $module, $config);
+    }
     public function behaviors()
     {
         return [
@@ -32,18 +51,8 @@ class SiteController extends Controller
 
     public function actionIndex()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Book::find()->with('authors'),
-            'pagination' => [
-                'pageSize' => 10,
-            ],
-            'sort' => [
-                'defaultOrder' => ['year' => SORT_DESC],
-            ],
-        ]);
-
         return $this->render('index', [
-            'dataProvider' => $dataProvider,
+            'dataProvider' => $this->bookRepo->getDataProvider(),
         ]);
     }
 
@@ -71,82 +80,39 @@ class SiteController extends Controller
     {
         $this->view->title = 'Подписки';
         $this->view->params['breadcrumbs'][] = $this->view->title;
+
         $userId = Yii::$app->user->id ?? 0;
-        $contact = Subscription::find()->select('contact')->where(['user_id' => $userId])->scalar();
+        $contact = $this->subRepo->getUserContact($userId);
+        $dataProvider = $this->authorRepo->getDataProvider();
+        $subscribedIds = $this->subRepo->getSubscribedAuthorIds($userId, $contact);
 
-        $dataProvider = new \yii\data\ActiveDataProvider([
-            'query' => Author::find(),
-            'pagination' => [
-                'pageSize' => 10,
-            ],
-            'sort' => [
-                'defaultOrder' => ['full_name' => SORT_ASC],
-            ],
-        ]);
-
-        // Уже подписанные авторы
-        if (!$userId) {
-            $subscribedIds = Subscription::find()
-                ->select('author_id')
-                ->where(['contact' => $contact])
-                ->column();
-        } else {
-            $subscribedIds = Subscription::find()
-                ->select('author_id')
-                ->where(['user_id' => $userId])
-                ->column();
-        }
-
-        return $this->render('subscription', [
-            'dataProvider' => $dataProvider,
-            'subscribedIds' => $subscribedIds,
-            'contact' => $contact
-        ]);
+        return $this->render('subscription', compact('dataProvider', 'subscribedIds', 'contact'));
     }
 
     public function actionSaveSubscriptions()
     {
         $selectedAuthors = Yii::$app->request->post('subscriptions', []);
         $contact = trim(Yii::$app->request->post('contact', ''));
-        $userId = Yii::$app->user->id ?? 0; // 0 - это гость
+        $userId = Yii::$app->user->id ?? 0;
 
-        // Проверка наличия контакта
-        if (empty($contact)) {
-            Yii::$app->session->setFlash('error', 'Укажите контакты для рассылки.');
-            return $this->redirect(['site/subscription']);
+        try {
+            if (!$contact) {
+                throw new \DomainException('Укажите контакты для рассылки.');
+            }
+            if (!$this->subRepo->validateContact($contact)) {
+                throw new \DomainException('Некорректный формат телефона.');
+            }
+            if (empty($selectedAuthors)) {
+                throw new \DomainException('Выберите хотя бы одного автора.');
+            }
+
+            $this->subRepo->saveSubscriptions($selectedAuthors, $contact, $userId);
+            Yii::$app->session->setFlash('success', 'Подписки успешно сохранены.');
+
+        } catch (\DomainException|\InvalidArgumentException $e) {
+            Yii::$app->session->setFlash('error', $e->getMessage());
         }
 
-        // Проверка формата телефона
-        if (!preg_match('/^(\+7|8)\d{10}$/', $contact)) {
-            Yii::$app->session->setFlash('error', 'Некорректный формат телефона. Используйте +7XXXXXXXXXX или 8XXXXXXXXXX.');
-            return $this->redirect(['site/subscription']);
-        }
-
-        // Проверка — выбраны ли авторы
-        if (empty($selectedAuthors)) {
-            Yii::$app->session->setFlash('error', 'Выберите хотя бы одного автора для подписки.');
-            return $this->redirect(['site/subscription']);
-        }
-
-        // Сохраняем
-        if (!$userId) {
-            Subscription::deleteAll(['contact' => $contact]); // если гость, удалим по контактам
-        } else {
-            Subscription::deleteAll(['user_id' => $userId]); // иначе по пользователю
-        }
-
-        foreach ($selectedAuthors as $authorId) {
-            $sub = new Subscription([
-                'user_id' => $userId,
-                'author_id' => $authorId,
-                'contact' => $contact,
-                'created_at' => time()
-            ]);
-
-            $sub->save();
-        }
-
-        Yii::$app->session->setFlash('success', 'Подписки успешно сохранены.');
         return $this->redirect(['site/subscription']);
     }
 

@@ -2,17 +2,23 @@
 
 namespace app\controllers;
 
+use app\repositories\BookRepository;
 use yii\web\Controller;
 
 use Yii;
 use app\models\Book;
-use yii\data\ActiveDataProvider;
-use yii\web\NotFoundHttpException;
-use yii\web\UploadedFile;
 use yii\filters\AccessControl;
 
 class BookController extends Controller
 {
+    private BookRepository $repo;
+
+    public function __construct($id, $module, BookRepository $repo, $config = [])
+    {
+        $this->repo = $repo;
+        parent::__construct($id, $module, $config);
+    }
+
     public function behaviors()
     {
         return [
@@ -31,20 +37,15 @@ class BookController extends Controller
 
     public function actionIndex()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Book::find()->orderBy(['created_at' => SORT_DESC]),
-            'pagination' => ['pageSize' => 10],
-        ]);
-
         return $this->render('index', [
-            'dataProvider' => $dataProvider,
+            'dataProvider' => $this->repo->getDataProvider(),
         ]);
     }
 
     public function actionView($id)
     {
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $this->repo->findModel($id),
         ]);
     }
 
@@ -52,20 +53,8 @@ class BookController extends Controller
     {
         $model = new Book();
 
-        if ($model->load(Yii::$app->request->post())) {
-            $model->created_at = time();
-            $model->updated_at = time();
-
-            $file = UploadedFile::getInstance($model, 'cover_path');
-            if ($file) {
-                $fileName = uniqid() . '.' . $file->extension;
-                $file->saveAs(Yii::getAlias('@webroot/uploads/' . $fileName));
-                $model->cover_path = $fileName;
-            }
-
-            if ($model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $this->repo->create($model)) {
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('create', ['model' => $model]);
@@ -73,21 +62,10 @@ class BookController extends Controller
 
     public function actionUpdate($id)
     {
-        $model = $this->findModel($id);
+        $model = $this->repo->findModel($id);
 
-        if ($model->load(Yii::$app->request->post())) {
-            $model->updated_at = time();
-
-            $file = UploadedFile::getInstance($model, 'cover_path');
-            if ($file) {
-                $fileName = uniqid() . '.' . $file->extension;
-                $file->saveAs(Yii::getAlias('@webroot/uploads/' . $fileName));
-                $model->cover_path = $fileName;
-            }
-
-            if ($model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
-            }
+        if ($model->load(Yii::$app->request->post()) && $this->repo->update($model)) {
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('update', ['model' => $model]);
@@ -95,16 +73,7 @@ class BookController extends Controller
 
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $this->repo->delete($id);
         return $this->redirect(['index']);
-    }
-
-    protected function findModel($id)
-    {
-        if (($model = Book::findOne($id)) !== null) {
-            return $model;
-        }
-
-        throw new NotFoundHttpException('Книга не найдена.');
     }
 }
