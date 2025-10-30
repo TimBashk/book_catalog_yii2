@@ -7,11 +7,7 @@ use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\filters\AccessControl;
 use app\models\LoginForm;
-use app\repositories\{
-    BookRepository,
-    AuthorRepository,
-    SubscriptionRepository
-};
+use app\repositories\{BookRepository, AuthorRepository, ReportRepository, SubscriptionRepository};
 
 class SiteController extends Controller
 {
@@ -19,17 +15,21 @@ class SiteController extends Controller
     private AuthorRepository $authorRepo;
     private SubscriptionRepository $subRepo;
 
+    private ReportRepository $reportRepository;
+
     public function __construct(
         $id,
         $module,
         BookRepository $bookRepo,
         AuthorRepository $authorRepo,
         SubscriptionRepository $subRepo,
+        ReportRepository $reportRepository,
         $config = []
     ) {
         $this->bookRepo = $bookRepo;
         $this->authorRepo = $authorRepo;
         $this->subRepo = $subRepo;
+        $this->reportRepository = $reportRepository;
         parent::__construct($id, $module, $config);
     }
     public function behaviors()
@@ -120,9 +120,16 @@ class SiteController extends Controller
 
     public function actionReports()
     {
-        $this->view->title = 'Отчет';
+        $this->view->title = 'Отчет — ТОП 10 авторов';
         $this->view->params['breadcrumbs'][] = $this->view->title;
 
-        return $this->render('reports');
+        $year = Yii::$app->request->get('year', date('Y'));
+
+        $dataProvider = $this->reportRepository->getTopAuthorsByYear((int)$year);
+
+        return $this->render('reports', [
+            'dataProvider' => $dataProvider,
+            'year' => $year,
+        ]);
     }
 }
